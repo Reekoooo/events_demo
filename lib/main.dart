@@ -43,7 +43,6 @@ class _HomeState extends State<Home> {
           print(index);
           factor = index;
 
-          // _position = factor*65.0;
           _position.add((dates.elementAt(index) - 14));
           _hight.add((dates.elementAt(index + 1) - dates.elementAt(index) + 1));
         }
