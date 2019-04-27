@@ -6,11 +6,15 @@ import 'package:events/events/event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:device_info/device_info.dart';
+import 'package:flutter/rendering.dart';
 
 StreamController<int> _position = StreamController.broadcast();
 StreamController<int> _hight = StreamController.broadcast();
 
-void main() => runApp(MyApp());
+void main() {
+  //debugPaintPointersEnabled = true;
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -157,7 +161,6 @@ class _HomeState extends State<Home> {
                               arguments: ScreenArguments(index, events, sdk)),
                         ),
                       );
-
                     },
                     child: EventCard(
                       viewModel: events[index],
@@ -201,7 +204,277 @@ class ScreenArguments {
   final int index;
   final List<EventCardViewModel> events;
   final int sdk;
+
   ScreenArguments(this.index, this.events, this.sdk);
+}
+
+class PhotoBrowser extends StatefulWidget {
+  final List<EventCardViewModel> events;
+  final int activePhotoIndex;
+
+  PhotoBrowser({this.events, this.activePhotoIndex});
+
+  @override
+  _PhotoBrowserState createState() => _PhotoBrowserState();
+}
+
+class _PhotoBrowserState extends State<PhotoBrowser>
+    with TickerProviderStateMixin {
+  AnimationController _nextCardBackController;
+  AnimationController _currentCardBackController;
+  AnimationController _nextCardForwardController;
+  AnimationController _currentCardForwardController;
+  Animation<Offset> _nextCardBackAnimation;
+  Animation<Offset> _nextCardForwardAnimation;
+  Animation<Offset> _currentCardBackAnimation;
+  Animation<Offset> _currentCardForwardAnimation;
+
+  int _currentCardIndex;
+  Offset _dragStart;
+  Offset _currentCardOffset;
+  Offset _nextCardOffset;
+
+  @override
+  void initState() {
+    _currentCardOffset = Offset.zero;
+    _nextCardOffset = Offset.zero;
+    _currentCardIndex = widget.activePhotoIndex;
+
+    _nextCardBackController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500))
+          ..addListener(() {
+            setState(() {
+              print(_nextCardOffset);
+              _nextCardOffset = _nextCardBackAnimation.value;
+            });
+          });
+
+    _nextCardForwardController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500))
+          ..addListener(() {
+            setState(() {
+              print(_nextCardOffset);
+              _nextCardOffset = _nextCardForwardAnimation.value;
+            });
+          })..addStatusListener((status){
+            if(status == AnimationStatus.completed){
+              setState(() {
+                _currentCardIndex =  _currentCardIndex +1 ;
+                _nextCardOffset = Offset.zero;
+              });
+            }
+        });
+
+    _currentCardBackController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500))
+          ..addListener(() {
+            setState(() {
+              print(_currentCardOffset);
+              _currentCardOffset = _currentCardBackAnimation.value;
+            });
+          });
+
+    _currentCardForwardController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500))
+          ..addListener(() {
+            setState(() {
+              print(_currentCardOffset);
+              _currentCardOffset = _currentCardForwardAnimation.value;
+            });
+          })..addStatusListener((status){
+            if(status == AnimationStatus.completed){
+              setState(() {
+                _currentCardIndex =  _currentCardIndex -1 ;
+                _currentCardOffset = Offset.zero;
+              });
+
+            }
+        });
+
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(PhotoBrowser oldWidget) {
+    if (widget.activePhotoIndex != oldWidget.activePhotoIndex) {
+      _currentCardIndex = widget.activePhotoIndex;
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void dispose() {
+    _nextCardBackController.dispose();
+    super.dispose();
+  }
+
+  _onPanStart(DragStartDetails details) {
+    _dragStart = details.globalPosition;
+    _nextCardBackController.stop(canceled: true);
+  }
+
+  _onPanUpdate(DragUpdateDetails details) {
+    final _dragPosition = details.globalPosition;
+    final swipeDistance = _dragPosition - _dragStart;
+    final bool swipeLeft = swipeDistance.dx.isNegative;
+    print("The drag distance = ${_dragPosition - _dragStart}");
+
+    if (swipeLeft) {
+      if (_currentCardOffset == Offset.zero) {
+        setState(() {
+          _nextCardOffset = Offset(swipeDistance.dx, 0.0);
+        });
+      } else {
+        setState(() {
+          swipeDistance.dx < 0.0
+              ? _currentCardOffset = Offset.zero
+              : _currentCardOffset = Offset(swipeDistance.dx, 0.0);
+        });
+      }
+    } else {
+      //swiping right
+      if (_nextCardOffset == Offset.zero) {
+        setState(() {
+          _currentCardOffset = Offset(swipeDistance.dx, 0.0);
+        });
+      } else {
+        swipeDistance.dx > 0.0 //next card offset increasing offscreen
+            ? setState(() {
+                _nextCardOffset = Offset.zero;
+              })
+            : setState(() {
+                _nextCardOffset = Offset(swipeDistance.dx, 0.0);
+              });
+      }
+    }
+  }
+
+  _onPanEnd(DragEndDetails details) {
+    double maxWidth = context.size.width;
+    double thresholdBack = -maxWidth / 2;
+    bool firstCard = _currentCardIndex<= 0;
+    bool lastCard = _currentCardIndex >= events.length-1;
+
+    if (_nextCardOffset.dx != 0.0 && (_nextCardOffset.dx > thresholdBack || lastCard)) {
+      _nextCardBackAnimation =
+          Tween<Offset>(begin: _nextCardOffset, end: Offset.zero).animate(
+              CurvedAnimation(
+                  parent: _nextCardBackController,
+                  curve: Curves.fastOutSlowIn));
+      _nextCardBackController.forward(from: 0.0);
+    } else if (_nextCardOffset.dx <= thresholdBack) {
+      _nextCardForwardAnimation =
+          Tween<Offset>(begin: _nextCardOffset, end: Offset(-maxWidth, 0.0))
+              .animate(CurvedAnimation(
+                  parent: _nextCardForwardController,
+                  curve: Curves.fastOutSlowIn));
+      _nextCardForwardController.forward(from: 0.0);
+    }
+
+    if (_currentCardOffset.dx != 0.0 && (_currentCardOffset.dx < -thresholdBack || firstCard)) {
+      _currentCardBackAnimation =
+          Tween<Offset>(begin: _currentCardOffset, end: Offset.zero).animate(
+              CurvedAnimation(
+                  parent: _currentCardBackController,
+                  curve: Curves.fastOutSlowIn));
+      _currentCardBackController.forward(from: 0.0);
+    } else if (_currentCardOffset.dx >= -thresholdBack) {
+      _currentCardForwardAnimation =
+          Tween<Offset>(begin: _currentCardOffset, end: Offset(maxWidth, 0.0))
+              .animate(CurvedAnimation(
+                  parent: _currentCardForwardController,
+                  curve: Curves.fastOutSlowIn));
+      _currentCardForwardController.forward(from: 0.0);
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onPanStart: _onPanStart,
+      onPanUpdate: _onPanUpdate,
+      onPanEnd: _onPanEnd,
+      child: Container(
+        color: Colors.transparent,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            _currentCardIndex < 1
+                ? PhotoCard.empty(
+                    offset: Offset.zero,
+                  )
+                : PhotoCard(
+                    imageAsset: widget.events[_currentCardIndex - 1].assetPath,
+                    offset: Offset.zero,
+                  ),
+            PhotoCard(
+              imageAsset: widget.events[_currentCardIndex].assetPath,
+              offset: _currentCardOffset,
+            ),
+            _currentCardIndex >= widget.events.length - 1
+                ? PhotoCard.offScreenEmpty(
+                    offset: _nextCardOffset,
+                  )
+                : PhotoCard.offScreen(
+                    imageAsset: widget.events[_currentCardIndex + 1].assetPath,
+                    offset: _nextCardOffset,
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PhotoCard extends StatelessWidget {
+  final String imageAsset;
+  final Offset offset;
+  final bool offScreen;
+
+  PhotoCard({
+    this.imageAsset,
+    this.offset,
+  }) : offScreen = false;
+
+  PhotoCard.empty({
+    this.offset,
+  })  : imageAsset = "",
+        offScreen = false;
+
+  PhotoCard.offScreen({this.imageAsset, this.offset}) : offScreen = true;
+
+  PhotoCard.offScreenEmpty({this.offset})
+      : imageAsset = "",
+        offScreen = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) => Transform(
+            transform: offScreen == true
+                ? Matrix4.translationValues(
+                    constraints.maxWidth + offset.dx, offset.dy, 0.0)
+                : Matrix4.translationValues(offset.dx, offset.dy, 0.0),
+            child: Container(
+              height: 200.0,
+              child: imageAsset == ""
+                  ? Container(
+                      color: Colors.black,
+                    )
+                  : Image.asset(
+                      imageAsset,
+                      fit: BoxFit.cover,
+                    ),
+            ),
+          ),
+    );
+  }
 }
 
 class DetailPage extends StatefulWidget {
@@ -219,64 +492,62 @@ class _DetailPageState extends State<DetailPage>
   int index;
   int sdk;
   bool showOverlay = false;
-  Offset nextCardOffset =  Offset.zero;
+  Offset nextCardOffset = Offset.zero;
   Offset currentCardOffset = Offset.zero;
-  Offset dragStart ;
-  Offset dragPosition ;
-  Offset swipeOffset ;
+  Offset dragStart;
+
+  Offset dragPosition;
+
+  Offset swipeOffset;
+
   bool dragleft;
   bool isPopingRequested = false;
   bool autoAnimate = true;
 
-
   @override
   void initState() {
-
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 300))
-          ..addStatusListener((status) {
-            if (status == AnimationStatus.dismissed) {
-              if (isPopingRequested) {
-                Navigator.maybePop(context);
-              }
-            }
-          })..addListener((){
-
-          if (nextCardOffset != Offset.zero) {
-            if (-nextCardOffset.dx < context.size.width / 2.0 || index == events.length-1) {
-
-              setState(() {
-                //Tween<Offset>(begin: )
-                nextCardOffset = Offset(nextCardOffset.dx*(1-_controller.value),0.0);
-              });
-
-            } else {
-              setState(() {
-                nextCardOffset =
-                    Tween<Offset>(begin: nextCardOffset,end: Offset(-context.size.width,0.0)).evaluate(_controller);
-              });
-
-
-            }
-          } else {
-            if (currentCardOffset.dx < context.size.width / 2.0 || index == 0) {
-              setState(() {
-                currentCardOffset = Offset(currentCardOffset.dx*(1-_controller.value),0.0);
-
-              });
-
-            } else {
-              setState(() {
-                currentCardOffset =
-                    Tween<Offset>(begin: currentCardOffset,end: Offset(context.size.width,0.0))
-                        .evaluate(_controller);
-
-              });
-
-            }
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300))
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.dismissed) {
+          if (isPopingRequested) {
+            Navigator.maybePop(context);
           }
-
-        });
+        }
+      })
+      ..addListener(() {
+        if (nextCardOffset != Offset.zero) {
+          if (-nextCardOffset.dx < context.size.width / 2.0 ||
+              index == events.length - 1) {
+            setState(() {
+              //Tween<Offset>(begin: )
+              nextCardOffset =
+                  Offset(nextCardOffset.dx * (1 - _controller.value), 0.0);
+            });
+          } else {
+            setState(() {
+              nextCardOffset = Tween<Offset>(
+                      begin: nextCardOffset,
+                      end: Offset(-context.size.width, 0.0))
+                  .evaluate(_controller);
+            });
+          }
+        } else {
+          if (currentCardOffset.dx < context.size.width / 2.0 || index == 0) {
+            setState(() {
+              currentCardOffset =
+                  Offset(currentCardOffset.dx * (1 - _controller.value), 0.0);
+            });
+          } else {
+            setState(() {
+              currentCardOffset = Tween<Offset>(
+                      begin: currentCardOffset,
+                      end: Offset(context.size.width, 0.0))
+                  .evaluate(_controller);
+            });
+          }
+        }
+      });
     state = Overlay.of(context);
     entry = OverlayEntry(
         builder: (context) => Positioned(
@@ -305,7 +576,7 @@ class _DetailPageState extends State<DetailPage>
     super.didChangeDependencies();
     ScreenArguments argemnts = ModalRoute.of(context).settings.arguments;
     events = argemnts.events;
-    index = index == null ? argemnts.index :index ;
+    index = index == null ? argemnts.index : index;
     sdk = argemnts.sdk;
     if (sdk >= 21) {
       SystemChrome.setEnabledSystemUIOverlays([]);
@@ -356,396 +627,444 @@ class _DetailPageState extends State<DetailPage>
     super.dispose();
   }
 
+  Widget _buildAppBar() {
+    return SizedBox(
+      height: 45.0,
+      child: AppBar(
+        elevation: 0.0,
+        backgroundColor: Colors.transparent,
+        leading: FadeTransition(
+          opacity: Tween(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+              parent: _controller,
+              curve: Interval(0.0, 1.0, curve: Curves.linear),
+            ),
+          ),
+          child: IconButton(
+            icon: const BackButtonIcon(),
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () {
+              isPopingRequested = true;
+              _controller.reverse();
+            },
+          ),
+        ),
+        actions: <Widget>[
+          FadeTransition(
+            opacity: Tween(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(
+                parent: _controller,
+                curve: Interval(0.8, 1.0, curve: Curves.linear),
+              ),
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.favorite_border,
+                color: Colors.white,
+              ),
+              onPressed: () {},
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-
-    //print("Hero tage is ${events[index].assetPath}");
-
-
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: GestureDetector(
-        onPanStart: (dragDetails) {
-          dragStart = dragDetails.globalPosition;
-        },
-        onPanUpdate: (dragDetails) {
-          dragPosition = dragDetails.globalPosition;
-          swipeOffset = dragPosition - dragStart;
-
-          if (nextCardOffset < Offset.zero ||
-              (swipeOffset.dx)< 0.0 ) {
-              nextCardOffset = swipeOffset;
-              currentCardOffset = Offset.zero;
-          } else if(currentCardOffset > Offset.zero || swipeOffset.dx > 0.0){
-              currentCardOffset = swipeOffset;
-              nextCardOffset = Offset.zero;
-          }
-          _controller.value = 1 -
-              2* (swipeOffset.dx).abs() / context.size.width;
-        },
-        onPanEnd: (dragDeatail) {
-          if (nextCardOffset.dx < 0.0) {
-            if (-nextCardOffset.dx < context.size.width / 2.0 ) {
-              //currentCardOffset = Offset.zero;
-            } else {
-              if(index< events.length-1){
-                index = index + 1;
-                currentCardOffset = nextCardOffset+Offset(context.size.width,0.0);
-                nextCardOffset = Offset.zero;
-              }
-            }
-          } else {
-            if (currentCardOffset.dx < context.size.width / 2.0 ) {
-             // nextCardOffset = Offset.zero;
-
-            } else {
-              if (index > 0) {
-                index = index - 1;
-                nextCardOffset = currentCardOffset-Offset(context.size.width,0.0);
-                currentCardOffset = Offset.zero;
-              }
-            }
-          }
-
-          _controller.animateTo(1.0);
-         // setState(() {
-            dragStart = null;
-            dragPosition = null;
-        //  });
-        },
-        child: Stack(
-          children: <Widget>[
-            Container(
-              height: double.infinity,
-              child: index < 1
-                  ? Container()
-                  : Image.asset(
-                      events[index - 1].assetPath,
-                      fit: BoxFit.cover,
-                    ),
-            ),
-
-            Transform(
-              transform:
-                  Matrix4.translationValues(currentCardOffset.dx, 0.0, 0.0),
-              child: Hero(
-                tag: events[index].assetPath,
-                child: Container(
-                  height: double.infinity,
-                  child: Image.asset(
-                    events[index].assetPath,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-            LayoutBuilder(
-              builder: (context, constraint) => Transform(
-                    transform: Matrix4.translationValues(
-                        constraint.maxWidth + nextCardOffset.dx, 0.0, 0.0),
-                    child: Container(
-                      height: double.infinity,
-                      child: index == events.length - 1
-                          ? Container()
-                          : Image.asset(
-                              events[index + 1].assetPath,
-                              fit: BoxFit.cover,
-                            ),
-                    ),
-                  ),
-            ),
-
-            AppBar(
-              //primary: false,
-              elevation: 0.0,
-              backgroundColor: Colors.transparent,
-              leading: FadeTransition(
-                opacity: Tween(begin: 0.0, end: 1.0).animate(
-                  CurvedAnimation(
-                    parent: _controller,
-                    curve: Interval(0.0, 1.0, curve: Curves.linear),
-                  ),
-                ),
-                child: IconButton(
-                  icon: const BackButtonIcon(),
-                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () {
-                    isPopingRequested = true;
-                    _controller.reverse();
-                  },
-                ),
-              ),
-              actions: <Widget>[
-                FadeTransition(
-                  opacity: Tween(begin: 0.0, end: 1.0).animate(
-                    CurvedAnimation(
-                      parent: _controller,
-                      curve: Interval(0.8, 1.0, curve: Curves.linear),
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.favorite_border,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {},
-                  ),
-                )
-              ],
-            ),
-            Positioned(
-              bottom: 0.0,
-              right: 0.0,
-              left: 0.0,
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    child: Row(
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: List<String>.generate(
-                                    events[index].title2.length,
-                                    (n) => events[index].title2[n])
-                                .asMap()
-                                .map((i, t) => MapEntry(
-                                      i,
-                                      ScaleTransition(
-                                        scale:
-                                            Tween(begin: 0.5, end: 1.0).animate(
-                                          CurvedAnimation(
-                                            parent: _controller,
-                                            curve: Interval(
-                                                i / events[index].title2.length,
-                                                1.0,
-                                                curve: Curves.elasticInOut),
-                                          ),
-                                        ),
-                                        child: FadeTransition(
-                                          opacity: Tween(begin: 0.0, end: 1.0)
-                                              .animate(
-                                            CurvedAnimation(
-                                              parent: _controller,
-                                              curve: Interval(
-                                                  i /
-                                                      events[index]
-                                                          .title2
-                                                          .length,
-                                                  (i + 1) /
-                                                      events[index]
-                                                          .title2
-                                                          .length,
-                                                  curve: Curves.easeInOutBack),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            t,
-                                            style: TextStyle(
-                                                fontSize: 45,
-                                                backgroundColor: Colors.black
-                                                    .withOpacity(0.2),
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                      ),
-                                    ))
-                                .values
-                                .toList(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FadeTransition(
-                    opacity: _mainPageTransitionAnimation,
-                    child: Container(
-                      alignment: Alignment.center,
-                      height: 200.0,
-                      //padding: EdgeInsets.all(16.0),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: const Radius.circular(30.0),
-                          topRight: const Radius.circular(30.0),
-                        ),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          Expanded(
-                            child: Row(
-                              children: <Widget>[
-                                Expanded(
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      border: const Border(
-                                        right: BorderSide(
-                                          width: 1.0,
-                                          color: Colors.black12,
-                                        ),
-                                        bottom: const BorderSide(
-                                          width: 1.0,
-                                          color: Colors.black12,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Row(
-                                        children: <Widget>[
-                                          const Icon(
-                                            Icons.mic,
-                                            color: Colors.black26,
-                                          ),
-                                          Text(
-                                            events[index].eventType,
-                                            style: const TextStyle(
-                                                color: Colors.black26),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border:  Border(
-                                        right:  BorderSide(
-                                          width: 1.0,
-                                          color: Colors.black12,
-                                        ),
-                                        bottom:  BorderSide(
-                                          width: 1.0,
-                                          color: Colors.black12,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding:  EdgeInsets.all(16.0),
-                                      child: Row(
-                                        children: <Widget>[
-                                          const Icon(
-                                            Icons.mic,
-                                            color: Colors.black26,
-                                          ),
-                                          Text(
-                                            events[index].eventType,
-                                            style: const TextStyle(
-                                                color: Colors.black26),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      border: const Border(
-                                        right: const BorderSide(
-                                          width: 1.0,
-                                          color: Colors.black12,
-                                        ),
-                                        bottom: const BorderSide(
-                                          width: 1.0,
-                                          color: Colors.black12,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Row(
-                                        children: <Widget>[
-                                          Icon(
-                                            Icons.mic,
-                                            color: Colors.black26,
-                                          ),
-                                          Text(
-                                            events[index].eventType,
-                                            style: const TextStyle(
-                                                color: Colors.black26),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: <Widget>[
-                                        Icon(
-                                          Icons.location_on,
-                                          color: Colors.black26,
-                                        ),
-                                        Text(
-                                          events[index].location,
-                                          style:
-                                              TextStyle(color: Colors.black26),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
-                                  child: IconButton(
-                                    icon: Icon(Icons.unfold_more),
-                                    color: Colors.lightBlue[400],
-                                    onPressed: () {},
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            alignment: Alignment.center,
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            child: RaisedButton(
-                              color: Colors.lightBlue[300],
-                              padding: EdgeInsets.only(
-                                right: 110.0,
-                                left: 110.0,
-                                top: 16.0,
-                                bottom: 16.0,
-                              ),
-                              shape:  RoundedRectangleBorder(
-                                borderRadius:  BorderRadius.circular(20.0),
-                              ),
-                              child: Text(
-                                "Book Now",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16.0,
-                                ),
-                              ),
-                              onPressed: () {},
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          ],
-        ),
+      body: Stack(
+        children: <Widget>[
+          PhotoBrowser(
+            events: events,
+            activePhotoIndex: index,
+          ),
+          _buildAppBar()
+        ],
       ),
+//      body: GestureDetector(
+//        onPanStart: (dragDetails) {
+//          dragStart = dragDetails.globalPosition;
+//        },
+//        onPanUpdate: (dragDetails) {
+//          dragPosition = dragDetails.globalPosition;
+//          swipeOffset = dragPosition - dragStart;
+//
+//          if (nextCardOffset < Offset.zero ||
+//              (swipeOffset.dx)< 0.0 ) {
+//              nextCardOffset = swipeOffset;
+//              currentCardOffset = Offset.zero;
+//          } else if(currentCardOffset > Offset.zero || swipeOffset.dx > 0.0){
+//              currentCardOffset = swipeOffset;
+//              nextCardOffset = Offset.zero;
+//          }
+//          _controller.value = 1 -
+//              2* (swipeOffset.dx).abs() / context.size.width;
+//        },
+//        onPanEnd: (dragDeatail) {
+//          if (nextCardOffset.dx < 0.0) {
+//            if (-nextCardOffset.dx < context.size.width / 2.0 ) {
+//              //currentCardOffset = Offset.zero;
+//            } else {
+//              if(index< events.length-1){
+//                index = index + 1;
+//                currentCardOffset = nextCardOffset+Offset(context.size.width,0.0);
+//                nextCardOffset = Offset.zero;
+//              }
+//            }
+//          } else {
+//            if (currentCardOffset.dx < context.size.width / 2.0 ) {
+//             // nextCardOffset = Offset.zero;
+//
+//            } else {
+//              if (index > 0) {
+//                index = index - 1;
+//                nextCardOffset = currentCardOffset-Offset(context.size.width,0.0);
+//                currentCardOffset = Offset.zero;
+//              }
+//            }
+//          }
+//
+//          _controller.animateTo(1.0);
+//         // setState(() {
+//            dragStart = null;
+//            dragPosition = null;
+//        //  });
+//        },
+//        child: Stack(
+//          children: <Widget>[
+//            Container(
+//              height: double.infinity,
+//              child: index < 1
+//                  ? Container()
+//                  : Image.asset(
+//                      events[index - 1].assetPath,
+//                      fit: BoxFit.cover,
+//                    ),
+//            ),
+//
+//            Transform(
+//              transform:
+//                  Matrix4.translationValues(currentCardOffset.dx, 0.0, 0.0),
+//              child: Hero(
+//                tag: events[index].assetPath,
+//                child: Container(
+//                  height: double.infinity,
+//                  child: Image.asset(
+//                    events[index].assetPath,
+//                    fit: BoxFit.cover,
+//                  ),
+//                ),
+//              ),
+//            ),
+//            LayoutBuilder(
+//              builder: (context, constraint) => Transform(
+//                    transform: Matrix4.translationValues(
+//                        constraint.maxWidth + nextCardOffset.dx, 0.0, 0.0),
+//                    child: Container(
+//                      height: double.infinity,
+//                      child: index == events.length - 1
+//                          ? Container()
+//                          : Image.asset(
+//                              events[index + 1].assetPath,
+//                              fit: BoxFit.cover,
+//                            ),
+//                    ),
+//                  ),
+//            ),
+//
+//            AppBar(
+//              //primary: false,
+//              elevation: 0.0,
+//              backgroundColor: Colors.transparent,
+//              leading: FadeTransition(
+//                opacity: Tween(begin: 0.0, end: 1.0).animate(
+//                  CurvedAnimation(
+//                    parent: _controller,
+//                    curve: Interval(0.0, 1.0, curve: Curves.linear),
+//                  ),
+//                ),
+//                child: IconButton(
+//                  icon: const BackButtonIcon(),
+//                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+//                  onPressed: () {
+//                    isPopingRequested = true;
+//                    _controller.reverse();
+//                  },
+//                ),
+//              ),
+//              actions: <Widget>[
+//                FadeTransition(
+//                  opacity: Tween(begin: 0.0, end: 1.0).animate(
+//                    CurvedAnimation(
+//                      parent: _controller,
+//                      curve: Interval(0.8, 1.0, curve: Curves.linear),
+//                    ),
+//                  ),
+//                  child: IconButton(
+//                    icon: Icon(
+//                      Icons.favorite_border,
+//                      color: Colors.white,
+//                    ),
+//                    onPressed: () {},
+//                  ),
+//                )
+//              ],
+//            ),
+//            Positioned(
+//              bottom: 0.0,
+//              right: 0.0,
+//              left: 0.0,
+//              child: Column(
+//                children: <Widget>[
+//                  Container(
+//                    child: Row(
+//                      children: <Widget>[
+//                        Padding(
+//                          padding: const EdgeInsets.all(16.0),
+//                          child: Row(
+//                            children: List<String>.generate(
+//                                    events[index].title2.length,
+//                                    (n) => events[index].title2[n])
+//                                .asMap()
+//                                .map((i, t) => MapEntry(
+//                                      i,
+//                                      ScaleTransition(
+//                                        scale:
+//                                            Tween(begin: 0.5, end: 1.0).animate(
+//                                          CurvedAnimation(
+//                                            parent: _controller,
+//                                            curve: Interval(
+//                                                i / events[index].title2.length,
+//                                                1.0,
+//                                                curve: Curves.elasticInOut),
+//                                          ),
+//                                        ),
+//                                        child: FadeTransition(
+//                                          opacity: Tween(begin: 0.0, end: 1.0)
+//                                              .animate(
+//                                            CurvedAnimation(
+//                                              parent: _controller,
+//                                              curve: Interval(
+//                                                  i /
+//                                                      events[index]
+//                                                          .title2
+//                                                          .length,
+//                                                  (i + 1) /
+//                                                      events[index]
+//                                                          .title2
+//                                                          .length,
+//                                                  curve: Curves.easeInOutBack),
+//                                            ),
+//                                          ),
+//                                          child: Text(
+//                                            t,
+//                                            style: TextStyle(
+//                                                fontSize: 45,
+//                                                backgroundColor: Colors.black
+//                                                    .withOpacity(0.2),
+//                                                color: Colors.white,
+//                                                fontWeight: FontWeight.bold),
+//                                          ),
+//                                        ),
+//                                      ),
+//                                    ))
+//                                .values
+//                                .toList(),
+//                          ),
+//                        ),
+//                      ],
+//                    ),
+//                  ),
+//                  FadeTransition(
+//                    opacity: _mainPageTransitionAnimation,
+//                    child: Container(
+//                      alignment: Alignment.center,
+//                      height: 200.0,
+//                      //padding: EdgeInsets.all(16.0),
+//                      decoration: const BoxDecoration(
+//                        color: Colors.white,
+//                        borderRadius: const BorderRadius.only(
+//                          topLeft: const Radius.circular(30.0),
+//                          topRight: const Radius.circular(30.0),
+//                        ),
+//                      ),
+//                      child: Column(
+//                        children: <Widget>[
+//                          Expanded(
+//                            child: Row(
+//                              children: <Widget>[
+//                                Expanded(
+//                                  child: Container(
+//                                    decoration: const BoxDecoration(
+//                                      border: const Border(
+//                                        right: BorderSide(
+//                                          width: 1.0,
+//                                          color: Colors.black12,
+//                                        ),
+//                                        bottom: const BorderSide(
+//                                          width: 1.0,
+//                                          color: Colors.black12,
+//                                        ),
+//                                      ),
+//                                    ),
+//                                    child: Padding(
+//                                      padding: const EdgeInsets.all(16.0),
+//                                      child: Row(
+//                                        children: <Widget>[
+//                                          const Icon(
+//                                            Icons.mic,
+//                                            color: Colors.black26,
+//                                          ),
+//                                          Text(
+//                                            events[index].eventType,
+//                                            style: const TextStyle(
+//                                                color: Colors.black26),
+//                                          ),
+//                                        ],
+//                                      ),
+//                                    ),
+//                                  ),
+//                                ),
+//                                Expanded(
+//                                  child: Container(
+//                                    decoration: BoxDecoration(
+//                                      border:  Border(
+//                                        right:  BorderSide(
+//                                          width: 1.0,
+//                                          color: Colors.black12,
+//                                        ),
+//                                        bottom:  BorderSide(
+//                                          width: 1.0,
+//                                          color: Colors.black12,
+//                                        ),
+//                                      ),
+//                                    ),
+//                                    child: Padding(
+//                                      padding:  EdgeInsets.all(16.0),
+//                                      child: Row(
+//                                        children: <Widget>[
+//                                          const Icon(
+//                                            Icons.mic,
+//                                            color: Colors.black26,
+//                                          ),
+//                                          Text(
+//                                            events[index].eventType,
+//                                            style: const TextStyle(
+//                                                color: Colors.black26),
+//                                          ),
+//                                        ],
+//                                      ),
+//                                    ),
+//                                  ),
+//                                ),
+//                                Expanded(
+//                                  child: Container(
+//                                    decoration: const BoxDecoration(
+//                                      border: const Border(
+//                                        right: const BorderSide(
+//                                          width: 1.0,
+//                                          color: Colors.black12,
+//                                        ),
+//                                        bottom: const BorderSide(
+//                                          width: 1.0,
+//                                          color: Colors.black12,
+//                                        ),
+//                                      ),
+//                                    ),
+//                                    child: Padding(
+//                                      padding: const EdgeInsets.all(16.0),
+//                                      child: Row(
+//                                        children: <Widget>[
+//                                          Icon(
+//                                            Icons.mic,
+//                                            color: Colors.black26,
+//                                          ),
+//                                          Text(
+//                                            events[index].eventType,
+//                                            style: const TextStyle(
+//                                                color: Colors.black26),
+//                                          ),
+//                                        ],
+//                                      ),
+//                                    ),
+//                                  ),
+//                                ),
+//                              ],
+//                            ),
+//                          ),
+//                          Expanded(
+//                            child: Row(
+//                              crossAxisAlignment: CrossAxisAlignment.center,
+//                              children: <Widget>[
+//                                Expanded(
+//                                  child: Padding(
+//                                    padding: const EdgeInsets.symmetric(
+//                                        horizontal: 16.0),
+//                                    child: Row(
+//                                      crossAxisAlignment:
+//                                          CrossAxisAlignment.center,
+//                                      children: <Widget>[
+//                                        Icon(
+//                                          Icons.location_on,
+//                                          color: Colors.black26,
+//                                        ),
+//                                        Text(
+//                                          events[index].location,
+//                                          style:
+//                                              TextStyle(color: Colors.black26),
+//                                        ),
+//                                      ],
+//                                    ),
+//                                  ),
+//                                ),
+//                                Padding(
+//                                  padding: const EdgeInsets.symmetric(
+//                                      horizontal: 16.0),
+//                                  child: IconButton(
+//                                    icon: Icon(Icons.unfold_more),
+//                                    color: Colors.lightBlue[400],
+//                                    onPressed: () {},
+//                                  ),
+//                                ),
+//                              ],
+//                            ),
+//                          ),
+//                          Container(
+//                            alignment: Alignment.center,
+//                            padding: EdgeInsets.symmetric(vertical: 16.0),
+//                            child: RaisedButton(
+//                              color: Colors.lightBlue[300],
+//                              padding: EdgeInsets.only(
+//                                right: 110.0,
+//                                left: 110.0,
+//                                top: 16.0,
+//                                bottom: 16.0,
+//                              ),
+//                              shape:  RoundedRectangleBorder(
+//                                borderRadius:  BorderRadius.circular(20.0),
+//                              ),
+//                              child: Text(
+//                                "Book Now",
+//                                style: TextStyle(
+//                                  color: Colors.white,
+//                                  fontSize: 16.0,
+//                                ),
+//                              ),
+//                              onPressed: () {},
+//                            ),
+//                          ),
+//                        ],
+//                      ),
+//                    ),
+//                  ),
+//                ],
+//              ),
+//            )
+//          ],
+//        ),
+//      ),
     );
   }
 }
