@@ -1,14 +1,17 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import '../week_calender.dart';
 
-List events = <EventCardViewModel>[
+List<EventCardViewModel> events = [
   EventCardViewModel(
     assetPath: "assets/amrdiab.jpg",
     title1: "Alexandria",
     title2: "Amr Diab",
     title3: "Alexandria",
     dayCardViewModel: DayCardViewModel(
-      day: 14,
-      dayShortNotation: "Sat",
+      day: DateTime.now().subtract(Duration(days: 4)),
+      //dayShortNotation: "Sat",
       backgound: Colors.white,
       dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
     ),
@@ -19,8 +22,8 @@ List events = <EventCardViewModel>[
     title2: "Angham",
     title3: "Alexandria",
     dayCardViewModel: DayCardViewModel(
-      day: 14,
-      dayShortNotation: "Sat",
+      day: DateTime.now().subtract(Duration(days: 4)),
+      //dayShortNotation: "Sat",
       backgound: Colors.white,
       dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
     ),
@@ -31,8 +34,8 @@ List events = <EventCardViewModel>[
     title2: "M.Hamaki",
     title3: "Cairo",
     dayCardViewModel: DayCardViewModel(
-      day: 15,
-      dayShortNotation: "Sun",
+      day: DateTime.now().subtract(Duration(days: 3)),
+      //dayShortNotation: "Sun",
       backgound: Colors.white,
       dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
     ),
@@ -43,8 +46,8 @@ List events = <EventCardViewModel>[
     title2: "Asala",
     title3: "Cairo",
     dayCardViewModel: DayCardViewModel(
-      day: 15,
-      dayShortNotation: "Sun",
+      day: DateTime.now().subtract(Duration(days: 3)),
+      //dayShortNotation: "Sun",
       backgound: Colors.white,
       dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
     ),
@@ -57,8 +60,8 @@ List events = <EventCardViewModel>[
     location: 'Hatshipsute Temple',
     eventType: "Music",
     dayCardViewModel: DayCardViewModel(
-      day: 16,
-      dayShortNotation: "Tue",
+      day: DateTime.now().subtract(Duration(days: 2)),
+      //dayShortNotation: "Tue",
       backgound: Colors.white,
       dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
     ),
@@ -69,8 +72,44 @@ List events = <EventCardViewModel>[
     title2: "Oka & Ortiga",
     title3: "Aswan",
     dayCardViewModel: DayCardViewModel(
-      day: 19,
-      dayShortNotation: "Thr",
+      day: DateTime.now().subtract(Duration(days: 0)),
+      //dayShortNotation: "Thr",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "assets/nancy.jpg",
+    title1: "Alexandria",
+    title2: "Nancy Ajram",
+    title3: "Mansoura",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().add(Duration(days: 1)),
+      //dayShortNotation: "Sat",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "assets/tamer.jpg",
+    title1: "Alexandria",
+    title2: "Tamer Hosney",
+    title3: "Giza",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().add(Duration(days: 2)),
+      //dayShortNotation: "Sat",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "assets/sherine.jpg",
+    title1: "Alexandria",
+    title2: "Sherine",
+    title3: "PortSaid",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().add(Duration(days: 4)),
+      //dayShortNotation: "Sat",
       backgound: Colors.white,
       dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
     ),
@@ -117,13 +156,112 @@ class EventCardViewModel {
       this.eventType ="",
       this.dayCardViewModel});
 }
+class QuadraticOffsetTween extends Tween<Offset> {
 
+  QuadraticOffsetTween({
+    Offset begin,
+    Offset end,
+  }) : super(begin: begin, end: end);
+
+
+  @override
+  Offset lerp(double t) {
+    double py = math.pi;
+    if (t == 0.0)
+      return begin;
+    if (t == 1.0)
+      return end;
+    final double x = begin.dx+ (end.dx-begin.dx) * (math.sin(t*t*t*t*t*t*(py/2)));
+    final double y = begin.dy+ (end.dy-begin.dy) *math.pow(t, 2);
+//    final double x = -11 * begin.dx * math.pow(t, 2) +
+//        (end.dx + 10 * begin.dx) * t + begin.dx;
+//    final double y = -2 * begin.dy * math.pow(t, 2) +
+//        (end.dy + 1 * begin.dy) * t + begin.dy;
+    return Offset(x, y);
+  }
+}
+class QuadraticRectTween extends RectTween {
+  /// Creates a [Tween] for animating [Rect]s along a circular arc.
+  ///
+  /// The [begin] and [end] properties must be non-null before the tween is
+  /// first used, but the arguments can be null if the values are going to be
+  /// filled in later.
+  QuadraticRectTween({
+    Rect begin,
+    Rect end,
+  }) : super(begin: begin, end: end);
+
+  bool _dirty = true;
+
+  void _initialize() {
+    assert(begin != null);
+    assert(end != null);
+    _centerArc = QuadraticOffsetTween(
+      begin: begin.center,
+      end: end.center,
+    );
+    _dirty = false;
+  }
+
+  /// If [begin] and [end] are non-null, returns a tween that interpolates along
+  /// a circular arc between [begin]'s [Rect.center] and [end]'s [Rect.center].
+  QuadraticOffsetTween get centerArc {
+    if (begin == null || end == null)
+      return null;
+    if (_dirty)
+      _initialize();
+    return _centerArc;
+  }
+  QuadraticOffsetTween _centerArc;
+
+  @override
+  set begin(Rect value) {
+    if (value != begin) {
+      super.begin = value;
+      _dirty = true;
+    }
+  }
+
+  @override
+  set end(Rect value) {
+    if (value != end) {
+      super.end = value;
+      _dirty = true;
+    }
+  }
+
+  @override
+  Rect lerp(double t) {
+    if (_dirty)
+      _initialize();
+    if (t == 0.0)
+      return begin;
+    if (t == 1.0)
+      return end;
+    final Offset center = _centerArc.lerp(t);
+    final double width = lerpDouble(begin.width, end.width, t);
+    final double height = lerpDouble(begin.height, end.height, t);
+    return Rect.fromLTWH(center.dx - width / 2.0, center.dy - height / 2.0, width, height);
+  }
+
+  @override
+  String toString() {
+    return '$runtimeType($begin \u2192 $end; centerArc=$centerArc)';
+  }
+}
 class EventCard extends StatelessWidget {
+  static RectTween createRectTween(Rect begin, Rect end) {
+    return QuadraticRectTween(begin: begin, end: end) ;
+  }
   final EventCardViewModel viewModel;
+  final double eventCardHeight;
+  final double eventCardWidth;
 
   const EventCard({
     Key key,
     this.viewModel,
+    this.eventCardHeight = 200.0,
+    this.eventCardWidth = 200.0
   }) : super(key: key);
 
   @override
@@ -131,7 +269,8 @@ class EventCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
       child: Container(
-        height: viewModel.hight,
+        height: eventCardHeight,
+        width: eventCardWidth,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(viewModel.radius)),
           boxShadow: [
@@ -151,11 +290,15 @@ class EventCard extends StatelessWidget {
               children: <Widget>[
                 Hero(
                   tag: viewModel.assetPath,
+                  createRectTween: createRectTween,
                   transitionOnUserGestures: true,
                   child: Container(
-                    child: Image.asset(
-                      viewModel.assetPath,
-                      fit: BoxFit.cover,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30.0),
+                      child: Image.asset(
+                        viewModel.assetPath,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
@@ -230,84 +373,3 @@ class EventCard extends StatelessWidget {
   }
 }
 
-class DayCard extends StatelessWidget {
-  final DayCardViewModel viewModel;
-
-  const DayCard({
-    Key key,
-    this.viewModel,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: viewModel.width,
-      decoration: BoxDecoration(
-        color: viewModel.backgound,
-        borderRadius: BorderRadius.all(viewModel.radiius),
-      ),
-      child: SizedBox(
-        width: viewModel.width,
-        height: viewModel.hight,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10.0),
-          child: Align(
-            alignment: Alignment.center,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  "${viewModel.day}",
-                  style: viewModel.dayTextStyle,
-                ),
-                Text(
-                  "${viewModel.dayShortNotation}",
-                  style: viewModel.dayShortNotationTextStyle,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class DayCardViewModel {
-  /// Usually three letters representation of a day shor name ex. "Fri"
-  final String dayShortNotation;
-
-  ///Text style for dayShort notation three letters
-  final TextStyle dayShortNotationTextStyle;
-
-  /// the day of the month in the calendar date if date is for ex. 12/01/2008
-  /// then day will be 12.
-  final int day;
-
-  /// Text style for the day no.
-  final TextStyle dayTextStyle;
-
-  /// The total width of the DayCard
-  final double width;
-
-  /// The total hight of the DayCard
-  final double hight;
-
-  /// the border radis of the card will dictate the card container decoration
-  final Radius radiius;
-
-  ///Background color for the card
-  final Color backgound;
-
-  DayCardViewModel({
-    this.dayShortNotation = "Sat",
-    this.day = 1,
-    this.width = 40.0,
-    this.hight = 60.0,
-    this.radiius = const Radius.circular(30.0),
-    this.backgound = Colors.transparent,
-    this.dayTextStyle = const TextStyle(fontSize: 16.0),
-    this.dayShortNotationTextStyle = const TextStyle(fontSize: 10.0),
-  });
-}

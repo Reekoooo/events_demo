@@ -3,13 +3,18 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:events/events/event_card.dart';
+import 'package:events/week_calender.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:device_info/device_info.dart';
 import 'package:flutter/rendering.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-StreamController<int> _position = StreamController.broadcast();
-StreamController<int> _hight = StreamController.broadcast();
+//StreamController<int> _position = StreamController.broadcast();
+//StreamController<int> _hight = StreamController.broadcast();
+StreamController<WeekCalenderIndicator> indexController =
+    StreamController.broadcast();
 
 void main() {
   //debugPaintPointersEnabled = true;
@@ -36,30 +41,12 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  ScrollController controller;
-  int factor = 0;
-  int index;
-  List<int> dates = [14, 14, 15, 16, 17, 19];
   static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
   int sdk = 100;
 
   @override
   void initState() {
     super.initState();
-    controller = ScrollController()
-      ..addListener(() {
-        //print(controller.positions);
-        index = ((controller.offset + 50.0) / 218.0).floor();
-
-        if (index != factor) {
-          print(index);
-          factor = index;
-
-          // _position = factor*65.0;
-          _position.add((dates.elementAt(index) - 14));
-          _hight.add((dates.elementAt(index + 1) - dates.elementAt(index) + 1));
-        }
-      });
     getAndroidVersion();
   }
 
@@ -88,114 +75,233 @@ class _HomeState extends State<Home> {
       SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
     }
 
-    double factor = 0.0;
+    double sideCalenderRotationFactor = 0.0;
 
     return Scaffold(
-      appBar: AppBar(
-        brightness: Brightness.dark,
-        backgroundColor: Colors.white,
-        elevation: 0.0,
-        title: SafeArea(
-          child: Row(
-            children: <Widget>[
-              Text(
-                "Hot Tickets",
-                style: TextStyle(
-                  fontSize: 20.0,
-                  color: Colors.black,
-                ),
-              ),
-              Icon(
-                Icons.unfold_more,
-                color: Colors.black,
-              )
-            ],
-          ),
-        ),
-        actions: <Widget>[
-          SafeArea(
-            child: IconButton(
-              icon: Icon(Icons.search),
-              color: Colors.black,
-              onPressed: () {},
-            ),
-          ),
-        ],
-      ),
-      body: Row(
-        children: <Widget>[
-          Container(
-            width: 50.0,
-            child: Stack(
+      appBar: _buildAppBar(),
+      body: OrientationBuilder(
+        builder: (BuildContext context, Orientation orientation) => Flex(
+              direction: orientation == Orientation.portrait
+                  ? Axis.horizontal
+                  : Axis.vertical,
               children: <Widget>[
-                Transform(
-                  transform: Matrix4.translationValues(
-                      lerpDouble(0.0, 30.0, factor), 0.0, 0.0)
-                    ..rotateY((lerpDouble(0.0, 3.14 / 2, factor))),
-                  child: SideCalender(),
+                Container(
+                  child: Stack(
+                    children: <Widget>[
+                      Transform(
+                        transform: Matrix4.translationValues(
+                            lerpDouble(0.0, 30.0, sideCalenderRotationFactor),
+                            0.0,
+                            0.0)
+                          ..rotateY((lerpDouble(
+                              0.0, 3.14 / 2, sideCalenderRotationFactor))),
+                        child: WeekCalender(
+                          dateTime: events[0].dayCardViewModel.day,
+                          startFrom: StartingDayOfTheWeek.Saturday,
+                        ),
+                      ),
+//                  Transform(
+//                    transform: Matrix4.translationValues(
+//                        lerpDouble(-30, 0.0, sideCalenderRotationFactor),
+//                        0.0,
+//                        0.0)
+//                      ..rotateY((lerpDouble(
+//                          0.0, 3.14 / 2, 1 - sideCalenderRotationFactor))),
+//                    child: WeekCalender(
+//                      dateTime: DateTime.now(),
+//                      startFrom: StartingDayOfTheWeek.Saturday,
+//                     // direction: Axis.vertical,
+//                    ),
+//                  ),
+                    ],
+                  ),
                 ),
-                Transform(
-                  transform: Matrix4.translationValues(
-                      lerpDouble(-30, 0.0, factor), 0.0, 0.0)
-                    ..rotateY((lerpDouble(0.0, 3.14 / 2, 1 - factor))),
-                  child: SideCalender(),
+                Expanded(
+                  child: new EventsList(
+                    sdk: sdk,
+                    events: events,
+                  ),
                 ),
               ],
             ),
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      brightness: Brightness.dark,
+      backgroundColor: Colors.white,
+      elevation: 0.0,
+      title: Row(
+        children: <Widget>[
+          Text(
+            "Hot Tickets",
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.black,
+            ),
           ),
-          Expanded(
-            child: ListView.builder(
-              controller: controller,
-              itemCount: events.length,
-              itemBuilder: (context, index) => GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          //transitionDuration: const Duration(seconds: 1),
-                          pageBuilder: (BuildContext context,
-                              Animation<double> animation,
-                              Animation<double> secondaryAnimation) {
-                            return DetailPage();
-                          },
-                          settings: RouteSettings(
-                              arguments: ScreenArguments(index, events, sdk)),
+          Icon(
+            Icons.unfold_more,
+            color: Colors.black,
+          )
+        ],
+      ),
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.search),
+          color: Colors.black,
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  BottomNavigationBar _buildBottomNavigationBar() {
+    return BottomNavigationBar(
+      elevation: 0.0,
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          title: Text(
+            "",
+            style: TextStyle(fontSize: 0.0),
+          ),
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_today),
+          title: Text(
+            "",
+            style: TextStyle(fontSize: 0.0),
+          ),
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.more_horiz),
+          title: Text(
+            "",
+            style: TextStyle(fontSize: 0.0),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class EventsList extends StatefulWidget {
+  const EventsList({
+    Key key,
+    @required this.sdk,
+    @required this.events,
+  }) : super(key: key);
+
+  final int sdk;
+  final List<EventCardViewModel> events;
+
+  @override
+  _EventsListState createState() => _EventsListState();
+}
+
+class _EventsListState extends State<EventsList> {
+  ScrollController controller;
+  double cardHeight;
+
+  int factor = 0;
+  int index = 0;
+  DateTime position;
+  int span;
+  WeekCalenderIndicator indicator;
+
+  @override
+  void initState() {
+    super.initState();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      indexController.add(_calculateIndicator(index));
+    });
+
+    controller = ScrollController()
+      ..addListener(() {
+        cardHeight = controller.position.viewportDimension / 2.5;
+        // print("controller offset = ${controller.offset}");
+        // print("Card height = $cardHeight");
+
+        index = ((controller.offset + (cardHeight / 2) + 20.0) /
+                (cardHeight + 20.0))
+            .floor();
+
+        if (index != factor) {
+          print(index);
+          factor = index;
+          indexController.add(_calculateIndicator(index));
+          //_calculateIndicator(index);
+
+        }
+      });
+  }
+
+  WeekCalenderIndicator _calculateIndicator(int index) {
+    position = widget.events[index].dayCardViewModel.day;
+    span = widget.events[index + 1].dayCardViewModel.day
+        .difference(widget.events[index].dayCardViewModel.day)
+        .inDays;
+
+    print("position = $position span = $span");
+    indicator = WeekCalenderIndicator(
+      position: position,
+      span: span,
+    );
+
+    return indicator;
+  }
+
+  Future getEvents() async{
+    var fireStore = Firestore.instance;
+    QuerySnapshot qn = await fireStore.collection("events").getDocuments();
+    return qn.documents;
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OrientationBuilder(
+      builder: (BuildContext context, Orientation orientation) => LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) =>
+                ListView.builder(
+                  scrollDirection: orientation == Orientation.portrait
+                      ? Axis.vertical
+                      : Axis.horizontal,
+                  controller: controller,
+                  itemCount: events.length,
+                  itemBuilder: (context, index) => GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            PageRouteBuilder(
+                              transitionDuration:
+                                  const Duration(milliseconds: 200),
+                              pageBuilder: (BuildContext context,
+                                  Animation<double> animation,
+                                  Animation<double> secondaryAnimation) {
+                                return DetailPage();
+                              },
+                              settings: RouteSettings(
+                                  arguments: ScreenArguments(
+                                      index, events, widget.sdk)),
+                            ),
+                          );
+                        },
+                        child: EventCard(
+                          eventCardHeight: orientation == Orientation.landscape
+                              ? constraints.maxHeight
+                              : constraints.maxHeight / 2.5,
+                          eventCardWidth: orientation == Orientation.landscape
+                              ? constraints.maxWidth / 2.5
+                              : constraints.maxWidth,
+                          viewModel: events[index],
                         ),
-                      );
-                    },
-                    child: EventCard(
-                      viewModel: events[index],
-                    ),
-                  ),
-            ),
+                      ),
+                ),
           ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        elevation: 0.0,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            title: Text(
-              "",
-              style: TextStyle(fontSize: 0.0),
-            ),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            title: Text(
-              "",
-              style: TextStyle(fontSize: 0.0),
-            ),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.more_horiz),
-            title: Text(
-              "",
-              style: TextStyle(fontSize: 0.0),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -211,8 +317,9 @@ class ScreenArguments {
 class PhotoBrowser extends StatefulWidget {
   final List<EventCardViewModel> events;
   final int activePhotoIndex;
+  final ValueNotifier<int> controller;
 
-  PhotoBrowser({this.events, this.activePhotoIndex});
+  PhotoBrowser({this.events, this.activePhotoIndex, this.controller});
 
   @override
   _PhotoBrowserState createState() => _PhotoBrowserState();
@@ -228,17 +335,25 @@ class _PhotoBrowserState extends State<PhotoBrowser>
   Animation<Offset> _nextCardForwardAnimation;
   Animation<Offset> _currentCardBackAnimation;
   Animation<Offset> _currentCardForwardAnimation;
+  Animation<double> _previousCardScaleAnimation;
+  Animation<double> _currentCardScaleAnimation;
 
   int _currentCardIndex;
   Offset _dragStart;
   Offset _currentCardOffset;
   Offset _nextCardOffset;
+  double _previousCardScale;
+
+  double _currentCardScale;
 
   @override
   void initState() {
     _currentCardOffset = Offset.zero;
     _nextCardOffset = Offset.zero;
+    _previousCardScale = 0.8;
+    _currentCardScale = 1.0;
     _currentCardIndex = widget.activePhotoIndex;
+    widget.controller?.value = _currentCardIndex;
 
     _nextCardBackController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 500))
@@ -246,6 +361,7 @@ class _PhotoBrowserState extends State<PhotoBrowser>
             setState(() {
               print(_nextCardOffset);
               _nextCardOffset = _nextCardBackAnimation.value;
+              _currentCardScale = _currentCardScaleAnimation.value;
             });
           });
 
@@ -255,15 +371,19 @@ class _PhotoBrowserState extends State<PhotoBrowser>
             setState(() {
               print(_nextCardOffset);
               _nextCardOffset = _nextCardForwardAnimation.value;
+              _currentCardScale = _currentCardScaleAnimation.value;
             });
-          })..addStatusListener((status){
-            if(status == AnimationStatus.completed){
+          })
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
               setState(() {
-                _currentCardIndex =  _currentCardIndex +1 ;
+                _currentCardIndex = _currentCardIndex + 1;
+                widget.controller?.value = _currentCardIndex;
                 _nextCardOffset = Offset.zero;
+                _currentCardScale = 1.0;
               });
             }
-        });
+          });
 
     _currentCardBackController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 500))
@@ -271,6 +391,7 @@ class _PhotoBrowserState extends State<PhotoBrowser>
             setState(() {
               print(_currentCardOffset);
               _currentCardOffset = _currentCardBackAnimation.value;
+              _previousCardScale = _previousCardScaleAnimation.value;
             });
           });
 
@@ -280,23 +401,21 @@ class _PhotoBrowserState extends State<PhotoBrowser>
             setState(() {
               print(_currentCardOffset);
               _currentCardOffset = _currentCardForwardAnimation.value;
+              _previousCardScale = _previousCardScaleAnimation.value;
             });
-          })..addStatusListener((status){
-            if(status == AnimationStatus.completed){
+          })
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
               setState(() {
-                _currentCardIndex =  _currentCardIndex -1 ;
+                _currentCardIndex = _currentCardIndex - 1;
+                widget.controller?.value = _currentCardIndex;
                 _currentCardOffset = Offset.zero;
+                _previousCardScale = 0.8;
               });
-
             }
-        });
+          });
 
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
   }
 
   @override
@@ -310,6 +429,9 @@ class _PhotoBrowserState extends State<PhotoBrowser>
   @override
   void dispose() {
     _nextCardBackController.dispose();
+    _nextCardForwardController.dispose();
+    _currentCardBackController.dispose();
+    _currentCardForwardController.dispose();
     super.dispose();
   }
 
@@ -319,21 +441,32 @@ class _PhotoBrowserState extends State<PhotoBrowser>
   }
 
   _onPanUpdate(DragUpdateDetails details) {
+    final double maxWidth = context.size.width;
     final _dragPosition = details.globalPosition;
     final swipeDistance = _dragPosition - _dragStart;
+    final double swipePercent = swipeDistance.dx / maxWidth;
     final bool swipeLeft = swipeDistance.dx.isNegative;
-    print("The drag distance = ${_dragPosition - _dragStart}");
+    print(
+        "The drag distance = ${_dragPosition - _dragStart} , Swipepercent = $swipePercent");
 
     if (swipeLeft) {
       if (_currentCardOffset == Offset.zero) {
         setState(() {
           _nextCardOffset = Offset(swipeDistance.dx, 0.0);
+          _currentCardScale = 1 - (1 - 0.8) * swipePercent.abs();
+          print("current Card Scale = $_currentCardScale");
         });
       } else {
         setState(() {
-          swipeDistance.dx < 0.0
-              ? _currentCardOffset = Offset.zero
-              : _currentCardOffset = Offset(swipeDistance.dx, 0.0);
+          if (swipeDistance.dx < 0.0) {
+            _currentCardOffset = Offset.zero;
+          } else {
+            _currentCardOffset = Offset(swipeDistance.dx, 0.0);
+            _previousCardScale = 0.8 + (1 - 0.8) * swipePercent.abs();
+          }
+//          swipeDistance.dx < 0.0
+//              ? _currentCardOffset = Offset.zero
+//              : _currentCardOffset = Offset(swipeDistance.dx, 0.0);
         });
       }
     } else {
@@ -341,6 +474,7 @@ class _PhotoBrowserState extends State<PhotoBrowser>
       if (_nextCardOffset == Offset.zero) {
         setState(() {
           _currentCardOffset = Offset(swipeDistance.dx, 0.0);
+          _previousCardScale = 0.8 + (1 - 0.8) * swipePercent.abs();
         });
       } else {
         swipeDistance.dx > 0.0 //next card offset increasing offscreen
@@ -349,20 +483,27 @@ class _PhotoBrowserState extends State<PhotoBrowser>
               })
             : setState(() {
                 _nextCardOffset = Offset(swipeDistance.dx, 0.0);
+                _currentCardScale = 1 - (1 - 0.8) * swipePercent.abs();
               });
       }
     }
   }
 
   _onPanEnd(DragEndDetails details) {
-    double maxWidth = context.size.width;
-    double thresholdBack = -maxWidth / 2;
-    bool firstCard = _currentCardIndex<= 0;
-    bool lastCard = _currentCardIndex >= events.length-1;
+    final double maxWidth = context.size.width;
+    final double thresholdBack = -maxWidth / 2;
+    final bool firstCard = _currentCardIndex <= 0;
+    final bool lastCard = _currentCardIndex >= events.length - 1;
 
-    if (_nextCardOffset.dx != 0.0 && (_nextCardOffset.dx > thresholdBack || lastCard)) {
+    if (_nextCardOffset.dx != 0.0 &&
+        (_nextCardOffset.dx > thresholdBack || lastCard)) {
       _nextCardBackAnimation =
           Tween<Offset>(begin: _nextCardOffset, end: Offset.zero).animate(
+              CurvedAnimation(
+                  parent: _nextCardBackController,
+                  curve: Curves.fastOutSlowIn));
+      _currentCardScaleAnimation =
+          Tween<double>(begin: _currentCardScale, end: 1.0).animate(
               CurvedAnimation(
                   parent: _nextCardBackController,
                   curve: Curves.fastOutSlowIn));
@@ -373,12 +514,25 @@ class _PhotoBrowserState extends State<PhotoBrowser>
               .animate(CurvedAnimation(
                   parent: _nextCardForwardController,
                   curve: Curves.fastOutSlowIn));
+
+      _currentCardScaleAnimation =
+          Tween<double>(begin: _currentCardScale, end: 0.8).animate(
+              CurvedAnimation(
+                  parent: _nextCardForwardController,
+                  curve: Curves.fastOutSlowIn));
+
       _nextCardForwardController.forward(from: 0.0);
     }
 
-    if (_currentCardOffset.dx != 0.0 && (_currentCardOffset.dx < -thresholdBack || firstCard)) {
+    if (_currentCardOffset.dx != 0.0 &&
+        (_currentCardOffset.dx < -thresholdBack || firstCard)) {
       _currentCardBackAnimation =
           Tween<Offset>(begin: _currentCardOffset, end: Offset.zero).animate(
+              CurvedAnimation(
+                  parent: _currentCardBackController,
+                  curve: Curves.fastOutSlowIn));
+      _previousCardScaleAnimation =
+          Tween<double>(begin: _previousCardScale, end: 0.8).animate(
               CurvedAnimation(
                   parent: _currentCardBackController,
                   curve: Curves.fastOutSlowIn));
@@ -389,9 +543,13 @@ class _PhotoBrowserState extends State<PhotoBrowser>
               .animate(CurvedAnimation(
                   parent: _currentCardForwardController,
                   curve: Curves.fastOutSlowIn));
+      _previousCardScaleAnimation =
+          Tween<double>(begin: _previousCardScale, end: 1.0).animate(
+              CurvedAnimation(
+                  parent: _currentCardForwardController,
+                  curve: Curves.fastOutSlowIn));
       _currentCardForwardController.forward(from: 0.0);
     }
-
   }
 
   @override
@@ -404,6 +562,7 @@ class _PhotoBrowserState extends State<PhotoBrowser>
         color: Colors.transparent,
         child: Stack(
           fit: StackFit.expand,
+          alignment: Alignment.bottomCenter,
           children: <Widget>[
             _currentCardIndex < 1
                 ? PhotoCard.empty(
@@ -412,10 +571,12 @@ class _PhotoBrowserState extends State<PhotoBrowser>
                 : PhotoCard(
                     imageAsset: widget.events[_currentCardIndex - 1].assetPath,
                     offset: Offset.zero,
+                    scale: _previousCardScale,
                   ),
             PhotoCard(
               imageAsset: widget.events[_currentCardIndex].assetPath,
               offset: _currentCardOffset,
+              scale: _currentCardScale,
             ),
             _currentCardIndex >= widget.events.length - 1
                 ? PhotoCard.offScreenEmpty(
@@ -436,20 +597,24 @@ class PhotoCard extends StatelessWidget {
   final String imageAsset;
   final Offset offset;
   final bool offScreen;
+  final double scale;
 
   PhotoCard({
     this.imageAsset,
     this.offset,
+    this.scale = 1.0,
   }) : offScreen = false;
 
   PhotoCard.empty({
     this.offset,
+    this.scale = 1.0,
   })  : imageAsset = "",
         offScreen = false;
 
-  PhotoCard.offScreen({this.imageAsset, this.offset}) : offScreen = true;
+  PhotoCard.offScreen({this.imageAsset, this.offset, this.scale = 1.0})
+      : offScreen = true;
 
-  PhotoCard.offScreenEmpty({this.offset})
+  PhotoCard.offScreenEmpty({this.offset, this.scale = 1.0})
       : imageAsset = "",
         offScreen = true;
 
@@ -460,17 +625,25 @@ class PhotoCard extends StatelessWidget {
             transform: offScreen == true
                 ? Matrix4.translationValues(
                     constraints.maxWidth + offset.dx, offset.dy, 0.0)
-                : Matrix4.translationValues(offset.dx, offset.dy, 0.0),
-            child: Container(
-              height: 200.0,
-              child: imageAsset == ""
-                  ? Container(
-                      color: Colors.black,
-                    )
-                  : Image.asset(
-                      imageAsset,
-                      fit: BoxFit.cover,
-                    ),
+                : Matrix4.translationValues(offset.dx, offset.dy, 0.0)
+              ..scale(scale),
+            child: Hero(
+              createRectTween: EventCard.createRectTween,
+              tag: imageAsset,
+              child: Container(
+                height: 200.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(0.0),
+                  child: imageAsset == ""
+                      ? Container(
+                          color: Colors.black,
+                        )
+                      : Image.asset(
+                          imageAsset,
+                          fit: BoxFit.cover,
+                        ),
+                ),
+              ),
             ),
           ),
     );
@@ -492,6 +665,7 @@ class _DetailPageState extends State<DetailPage>
   int index;
   int sdk;
   bool showOverlay = false;
+  ValueNotifier<int> indexChanged;
   Offset nextCardOffset = Offset.zero;
   Offset currentCardOffset = Offset.zero;
   Offset dragStart;
@@ -568,6 +742,11 @@ class _DetailPageState extends State<DetailPage>
               ),
             ));
 
+    indexChanged = ValueNotifier(index)
+      ..addListener(() {
+        print("IndexCanged ${indexChanged.value}");
+      });
+
     super.initState();
   }
 
@@ -624,12 +803,13 @@ class _DetailPageState extends State<DetailPage>
   @override
   void dispose() {
     _controller.dispose();
+    indexChanged.dispose();
     super.dispose();
   }
 
   Widget _buildAppBar() {
     return SizedBox(
-      height: 45.0,
+      height: kToolbarHeight,
       child: AppBar(
         elevation: 0.0,
         backgroundColor: Colors.transparent,
@@ -679,6 +859,7 @@ class _DetailPageState extends State<DetailPage>
           PhotoBrowser(
             events: events,
             activePhotoIndex: index,
+            controller: indexChanged,
           ),
           _buildAppBar()
         ],
@@ -1069,135 +1250,132 @@ class _DetailPageState extends State<DetailPage>
   }
 }
 
-class SideCalender extends StatelessWidget {
-  final double hight;
-  final double width;
-
-  const SideCalender({
-    Key key,
-    this.hight = 55.0,
-    this.width = 30.0,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-      child: Container(
-        width: width,
-        child: Transform(
-          transform: Matrix4.translationValues(0.0, 0.0, 0.0),
-          child: Stack(
-            overflow: Overflow.visible,
-            children: <Widget>[
-              StreamBuilder<Object>(
-                  stream: _position.stream,
-                  initialData: 0.0,
-                  builder: (context, snapshot) {
-                    return AnimatedPositioned(
-                      top: hight * (snapshot.data),
-                      duration: Duration(milliseconds: 200),
-                      child: StreamBuilder<Object>(
-                          stream: _hight.stream,
-                          initialData: 1.0,
-                          builder: (context, snapshot) {
-                            return AnimatedContainer(
-                              height: hight * snapshot.data,
-                              width: width,
-                              duration: Duration(milliseconds: 500),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor,
-                                borderRadius: BorderRadius.circular(30.0),
-                              ),
-                              child: SizedBox(
-                                width: width,
-                                height: hight,
-                              ),
-                            );
-                          }),
-                    );
-                  }),
-              Positioned(
-                top: 0.0,
-                height: hight,
-                width: width,
-                child: DayCard(
-                  viewModel: DayCardViewModel(
-                    dayShortNotation: "Sat",
-                    day: 14,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: hight,
-                height: hight,
-                width: width,
-                child: DayCard(
-                  viewModel: DayCardViewModel(
-                    dayShortNotation: "Sun",
-                    day: 15,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 2 * hight,
-                height: hight,
-                width: width,
-                child: DayCard(
-                  viewModel: DayCardViewModel(
-                    dayShortNotation: "Mon",
-                    day: 16,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 3 * hight,
-                height: hight,
-                width: width,
-                child: DayCard(
-                  viewModel: DayCardViewModel(
-                    dayShortNotation: "Tue",
-                    day: 17,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 4 * hight,
-                height: hight,
-                width: width,
-                child: DayCard(
-                  viewModel: DayCardViewModel(
-                    dayShortNotation: "Wed",
-                    day: 18,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 5 * hight,
-                height: hight,
-                width: width,
-                child: DayCard(
-                  viewModel: DayCardViewModel(
-                    dayShortNotation: "Thr",
-                    day: 19,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 6 * hight,
-                height: hight,
-                width: width,
-                child: DayCard(
-                  viewModel: DayCardViewModel(
-                    dayShortNotation: "Fri",
-                    day: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//class SideCalender extends StatelessWidget {
+//  final double hight;
+//  final double width;
+//
+//  const SideCalender({
+//    Key key,
+//    this.hight = 55.0,
+//    this.width = 30.0,
+//  }) : super(key: key);
+//
+//  @override
+//  Widget build(BuildContext context) {
+//    return Padding(
+//      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+//      child: Container(
+//        width: width,
+//        child: Stack(
+//          overflow: Overflow.visible,
+//          children: <Widget>[
+//            StreamBuilder<Object>(
+//                stream: _position.stream,
+//                initialData: 0.0,
+//                builder: (context, snapshot) {
+//                  return AnimatedPositioned(
+//                    top: hight * (snapshot.data),
+//                    duration: Duration(milliseconds: 200),
+//                    child: StreamBuilder<Object>(
+//                        stream: _hight.stream,
+//                        initialData: 1.0,
+//                        builder: (context, snapshot) {
+//                          return AnimatedContainer(
+//                            height: hight * snapshot.data,
+//                            width: width,
+//                            duration: Duration(milliseconds: 500),
+//                            decoration: BoxDecoration(
+//                              color: Theme.of(context).primaryColor,
+//                              borderRadius: BorderRadius.circular(30.0),
+//                            ),
+//                            child: SizedBox(
+//                              width: width,
+//                              height: hight,
+//                            ),
+//                          );
+//                        }),
+//                  );
+//                }),
+//            Positioned(
+//              top: 0.0,
+//              height: hight,
+//              width: width,
+//              child: DayCard(
+//                viewModel: DayCardViewModel(
+//                  dayShortNotation: "Sat",
+//                  day: 14,
+//                ),
+//              ),
+//            ),
+//            Positioned(
+//              top: hight,
+//              height: hight,
+//              width: width,
+//              child: DayCard(
+//                viewModel: DayCardViewModel(
+//                  dayShortNotation: "Sun",
+//                  day: 15,
+//                ),
+//              ),
+//            ),
+//            Positioned(
+//              top: 2 * hight,
+//              height: hight,
+//              width: width,
+//              child: DayCard(
+//                viewModel: DayCardViewModel(
+//                  dayShortNotation: "Mon",
+//                  day: 16,
+//                ),
+//              ),
+//            ),
+//            Positioned(
+//              top: 3 * hight,
+//              height: hight,
+//              width: width,
+//              child: DayCard(
+//                viewModel: DayCardViewModel(
+//                  dayShortNotation: "Tue",
+//                  day: 17,
+//                ),
+//              ),
+//            ),
+//            Positioned(
+//              top: 4 * hight,
+//              height: hight,
+//              width: width,
+//              child: DayCard(
+//                viewModel: DayCardViewModel(
+//                  dayShortNotation: "Wed",
+//                  day: 18,
+//                ),
+//              ),
+//            ),
+//            Positioned(
+//              top: 5 * hight,
+//              height: hight,
+//              width: width,
+//              child: DayCard(
+//                viewModel: DayCardViewModel(
+//                  dayShortNotation: "Thr",
+//                  day: 19,
+//                ),
+//              ),
+//            ),
+//            Positioned(
+//              top: 6 * hight,
+//              height: hight,
+//              width: width,
+//              child: DayCard(
+//                viewModel: DayCardViewModel(
+//                  dayShortNotation: "Fri",
+//                  day: 20,
+//                ),
+//              ),
+//            ),
+//          ],
+//        ),
+//      ),
+//    );
+//  }
+//}
