@@ -1,4 +1,4 @@
-import 'package:events/main.dart';
+import 'package:events/blocs/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -18,7 +18,7 @@ class WeekCalender extends StatefulWidget {
   _WeekCalenderState createState() => _WeekCalenderState();
 }
 
-class _WeekCalenderState extends State<WeekCalender> {
+class _WeekCalenderState extends State<WeekCalender>  with WidgetsBindingObserver{
   DateTime datetime;
   List<String> _months;
 
@@ -33,13 +33,13 @@ class _WeekCalenderState extends State<WeekCalender> {
   final GlobalKey _keySecondDayCard = GlobalKey(debugLabel: "second");
 
   Offset firstDayCardOffset = Offset.zero;
-  Offset firstDayCardOffsetLocal = Offset.zero;
   Offset secondDayCardOffset = Offset.zero;
   Offset positionFactor = Offset.zero;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     print("initstate called");
     datetime = widget.dateTime;
     weekDay = widget.dateTime.weekday;
@@ -80,13 +80,16 @@ class _WeekCalenderState extends State<WeekCalender> {
     firstDayOfTheWeek = widget.dateTime
         .subtract(Duration(days: weekDay - 1))
         .subtract(Duration(days: weekDayAdjustingFactor));
-    SchedulerBinding.instance.addPostFrameCallback(_afterLayout);
+    SchedulerBinding.instance.addPostFrameCallback(_calculatePositionOffset);
+
   }
 
-  _afterLayout(_) {
+  _calculatePositionOffset(_) {
     //_getSizes();
     firstDayCardOffset = _getPositions(_keyFirstDayCard);
     secondDayCardOffset = _getPositions(_keySecondDayCard);
+    positionFactor = secondDayCardOffset - firstDayCardOffset;
+    print ("Position factor = $positionFactor");
   }
 
   Offset _getPositions(_key) {
@@ -95,34 +98,50 @@ class _WeekCalenderState extends State<WeekCalender> {
         renderBoxRed.localToGlobal(Offset.zero); //.localToGlobal(Offset.zero);
     //final pos = renderBoxRed.globalToLocal(Offset.zero);
 
-    print("POSITION of $_key : $position ");
+    //print("POSITION of $_key : $position ");
     return position;
   }
 
   @override
   void didUpdateWidget(WeekCalender oldWidget) {
-    SchedulerBinding.instance.addPostFrameCallback(_afterLayout);
-    positionFactor = secondDayCardOffset - firstDayCardOffset;
+
+
+    print("didUpdateWidget called");
+    SchedulerBinding.instance.addPostFrameCallback(_calculatePositionOffset);
+
+    //positionFactor = secondDayCardOffset - firstDayCardOffset;
 
 //    print(
 //        "difference in y = ${firstDayCardOffset.dy - secondDayCardOffset.dy}");
     if (widget.dateTime != oldWidget.dateTime) {
-      setState(() {
         weekDay = widget.dateTime.weekday;
         firstDayOfTheWeek = widget.dateTime
             .subtract(Duration(days: weekDay - 1))
             .subtract(Duration(days: weekDayAdjustingFactor));
-      });
     }
     if (widget.direction != oldWidget.direction) {
-      setState(() {
         direction = widget.direction;
-      });
     }
 
     // print("Offset from Updated $secondDayCardOffset");
 
     super.didUpdateWidget(oldWidget);
+  }
+  @override
+  void didChangeMetrics() {
+    print("Metrics changed");
+    SchedulerBinding.instance.addPostFrameCallback(_calculatePositionOffset);
+    super.didChangeMetrics();
+  }
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print("did change dependincies called");
   }
 
   @override
@@ -161,7 +180,7 @@ class _WeekCalenderState extends State<WeekCalender> {
                     alignment: Alignment.center,
                     children: <Widget>[
                       StreamBuilder<WeekCalenderIndicator>(
-                          stream: indexController.stream,
+                          stream: Provider.of(context).indicator,
                           initialData: WeekCalenderIndicator(
                             position: firstDayOfTheWeek,
                             span: 0,
@@ -177,9 +196,18 @@ class _WeekCalenderState extends State<WeekCalender> {
                                 .subtract(Duration(days: weekDay - 1))
                                 .subtract(
                                     Duration(days: weekDayAdjustingFactor));
-                            print("firstDayOfTheWeek = $firstDayOfTheWeek");
-                            print(
-                                "Indicator position = ${snapshot.data.position} span = ${snapshot.data.span}");
+                           // print("firstDayOfTheWeek = $firstDayOfTheWeek");
+                            print("top = ${(positionFactor.dy - 60.0) +
+                                positionFactor.dy *
+                                    (snapshot.data.position
+                                        .difference(firstDayOfTheWeek)
+                                        .inDays)}");
+                            print("left = ${ (positionFactor.dx - 40.0) +
+                                positionFactor.dx *
+                                    (snapshot.data.position
+                                        .difference(firstDayOfTheWeek)
+                                        .inDays)}");
+
                             return AnimatedPositioned(
                               top: orientation == Orientation.landscape
                                   ? (positionFactor.dy - 60.0) +

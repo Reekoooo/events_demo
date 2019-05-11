@@ -1,120 +1,122 @@
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import '../week_calender.dart';
+import 'package:events/ui/week_calender.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-List<EventCardViewModel> events = [
-  EventCardViewModel(
-    assetPath: "assets/amrdiab.jpg",
-    title1: "Alexandria",
-    title2: "Amr Diab",
-    title3: "Alexandria",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().subtract(Duration(days: 4)),
-      //dayShortNotation: "Sat",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/angam.jpg",
-    title1: "Alexandria",
-    title2: "Angham",
-    title3: "Alexandria",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().subtract(Duration(days: 4)),
-      //dayShortNotation: "Sat",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/hamaki.jpg",
-    title1: "Cairo",
-    title2: "M.Hamaki",
-    title3: "Cairo",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().subtract(Duration(days: 3)),
-      //dayShortNotation: "Sun",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/asala.jpeg",
-    title1: "Cairo",
-    title2: "Asala",
-    title3: "Cairo",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().subtract(Duration(days: 3)),
-      //dayShortNotation: "Sun",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/rihanna.jpg",
-    title1: "Luxor",
-    title2: "Rihanna",
-    title3: "Luxor",
-    location: 'Hatshipsute Temple',
-    eventType: "Music",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().subtract(Duration(days: 2)),
-      //dayShortNotation: "Tue",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/oka.jpg",
-    title1: "Aswan",
-    title2: "Oka & Ortiga",
-    title3: "Aswan",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().subtract(Duration(days: 0)),
-      //dayShortNotation: "Thr",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/nancy.jpg",
-    title1: "Alexandria",
-    title2: "Nancy Ajram",
-    title3: "Mansoura",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().add(Duration(days: 1)),
-      //dayShortNotation: "Sat",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/tamer.jpg",
-    title1: "Alexandria",
-    title2: "Tamer Hosney",
-    title3: "Giza",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().add(Duration(days: 2)),
-      //dayShortNotation: "Sat",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-  EventCardViewModel(
-    assetPath: "assets/sherine.jpg",
-    title1: "Alexandria",
-    title2: "Sherine",
-    title3: "PortSaid",
-    dayCardViewModel: DayCardViewModel(
-      day: DateTime.now().add(Duration(days: 4)),
-      //dayShortNotation: "Sat",
-      backgound: Colors.white,
-      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-    ),
-  ),
-];
+//List<EventCardViewModel> events = [
+//  EventCardViewModel(
+//    assetPath: "assets/amrdiab.jpg",
+//    title1: "Alexandria",
+//    title2: "Amr Diab",
+//    title3: "Alexandria",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().subtract(Duration(days: 4)),
+//      //dayShortNotation: "Sat",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/angam.jpg",
+//    title1: "Alexandria",
+//    title2: "Angham",
+//    title3: "Alexandria",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().subtract(Duration(days: 4)),
+//      //dayShortNotation: "Sat",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/hamaki.jpg",
+//    title1: "Cairo",
+//    title2: "M.Hamaki",
+//    title3: "Cairo",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().subtract(Duration(days: 3)),
+//      //dayShortNotation: "Sun",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/asala.jpeg",
+//    title1: "Cairo",
+//    title2: "Asala",
+//    title3: "Cairo",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().subtract(Duration(days: 3)),
+//      //dayShortNotation: "Sun",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/rihanna.jpg",
+//    title1: "Luxor",
+//    title2: "Rihanna",
+//    title3: "Luxor",
+//    location: 'Hatshipsute Temple',
+//    eventType: "Music",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().subtract(Duration(days: 2)),
+//      //dayShortNotation: "Tue",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/oka.jpg",
+//    title1: "Aswan",
+//    title2: "Oka & Ortiga",
+//    title3: "Aswan",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().subtract(Duration(days: 0)),
+//      //dayShortNotation: "Thr",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/nancy.jpg",
+//    title1: "Alexandria",
+//    title2: "Nancy Ajram",
+//    title3: "Mansoura",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().add(Duration(days: 1)),
+//      //dayShortNotation: "Sat",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/tamer.jpg",
+//    title1: "Alexandria",
+//    title2: "Tamer Hosney",
+//    title3: "Giza",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().add(Duration(days: 2)),
+//      //dayShortNotation: "Sat",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//  EventCardViewModel(
+//    assetPath: "assets/sherine.jpg",
+//    title1: "Alexandria",
+//    title2: "Sherine",
+//    title3: "PortSaid",
+//    dayCardViewModel: DayCardViewModel(
+//      day: DateTime.now().add(Duration(days: 4)),
+//      //dayShortNotation: "Sat",
+//      backgound: Colors.white,
+//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+//    ),
+//  ),
+//];
 
 class EventCardViewModel {
   /// hight of the EventCard.
@@ -155,6 +157,20 @@ class EventCardViewModel {
       this.location = "",
       this.eventType ="",
       this.dayCardViewModel});
+
+  factory EventCardViewModel.fromSnapShot(DocumentSnapshot event){
+    return EventCardViewModel(
+      assetPath: event["assetPath"],
+      title1: event["title1"],
+      title2: event["title2"],
+      title3: event["title3"],
+      dayCardViewModel: DayCardViewModel(
+        day:  DateTime.fromMillisecondsSinceEpoch(event["datetime"].millisecondsSinceEpoch),
+        backgound: Colors.white,
+        dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+      ),
+    );
+  }
 }
 class QuadraticOffsetTween extends Tween<Offset> {
 
@@ -173,10 +189,6 @@ class QuadraticOffsetTween extends Tween<Offset> {
       return end;
     final double x = begin.dx+ (end.dx-begin.dx) * (math.sin(t*t*t*t*t*t*(py/2)));
     final double y = begin.dy+ (end.dy-begin.dy) *math.pow(t, 2);
-//    final double x = -11 * begin.dx * math.pow(t, 2) +
-//        (end.dx + 10 * begin.dx) * t + begin.dx;
-//    final double y = -2 * begin.dy * math.pow(t, 2) +
-//        (end.dy + 1 * begin.dy) * t + begin.dy;
     return Offset(x, y);
   }
 }
@@ -295,8 +307,8 @@ class EventCard extends StatelessWidget {
                   child: Container(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(30.0),
-                      child: Image.asset(
-                        viewModel.assetPath,
+                      child: CachedNetworkImage(
+                        imageUrl: viewModel.assetPath,
                         fit: BoxFit.cover,
                       ),
                     ),
