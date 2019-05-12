@@ -1,6 +1,5 @@
 import 'package:events/blocs/bloc.dart';
 import 'package:events/blocs/provider.dart';
-import 'package:events/main.dart';
 import 'package:events/models/details_screen_arguments.dart';
 import 'package:events/screens/details_screen.dart';
 import 'package:events/ui/event_card.dart';
@@ -61,10 +60,6 @@ class _EventsListState extends State<EventsList> {
     span = (widget.events[index + 1].dayCardViewModel.day
         .difference(widget.events[index].dayCardViewModel.day)
         .inMilliseconds/Duration.millisecondsPerDay).ceil();
-
-    print("index +1 date = ${widget.events[index + 1].dayCardViewModel.day} and index date = ${widget.events[index].dayCardViewModel.day}");
-
-    print("index = $index position = $position span = $span");
     indicator = WeekCalenderIndicator(
       position: position,
       span: span,
@@ -80,11 +75,13 @@ class _EventsListState extends State<EventsList> {
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) =>
                   ListView.builder(
+                    controller: controller,
+                    itemCount: widget.events.length,
+
                     scrollDirection: orientation == Orientation.portrait
                         ? Axis.vertical
                         : Axis.horizontal,
-                    controller: controller,
-                    itemCount: widget.events.length,
+
                     itemBuilder: (context, index) => GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(

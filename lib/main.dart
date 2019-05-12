@@ -11,13 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:device_info/device_info.dart';
 import 'package:flutter/rendering.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'blocs/provider.dart';
-
-//StreamController<int> _position = StreamController.broadcast();
-//StreamController<int> _hight = StreamController.broadcast();
-//StreamController<WeekCalenderIndicator> indexController =
-//    StreamController.broadcast();
 
 void main() {
   //debugPaintPointersEnabled = true;
@@ -53,7 +47,8 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    eventStream = Firestore.instance.collection("events").orderBy("datetime").snapshots();
+    eventStream =
+        Firestore.instance.collection("events").orderBy("datetime").snapshots();
     getAndroidVersion();
   }
 
@@ -74,7 +69,6 @@ class _HomeState extends State<Home> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (sdk > 21) {
@@ -85,8 +79,8 @@ class _HomeState extends State<Home> {
 
     final double sideCalenderRotationFactor = 0.0;
 
-    final Widget weekCalender =  WeekCalender(
-      dateTime: DateTime.now(),//events[0].dayCardViewModel.day,
+    final Widget weekCalender = WeekCalender(
+      dateTime: DateTime.now(), //events[0].dayCardViewModel.day,
       startFrom: StartingDayOfTheWeek.Saturday,
     );
 
@@ -110,31 +104,18 @@ class _HomeState extends State<Home> {
                               0.0, 3.14 / 2, sideCalenderRotationFactor))),
                         child: weekCalender,
                       ),
-//                  Transform(
-//                    transform: Matrix4.translationValues(
-//                        lerpDouble(-30, 0.0, sideCalenderRotationFactor),
-//                        0.0,
-//                        0.0)
-//                      ..rotateY((lerpDouble(
-//                          0.0, 3.14 / 2, 1 - sideCalenderRotationFactor))),
-//                    child: WeekCalender(
-//                      dateTime: DateTime.now(),
-//                      startFrom: StartingDayOfTheWeek.Saturday,
-//                     // direction: Axis.vertical,
-//                    ),
-//                  ),
                     ],
                   ),
                 ),
                 StreamBuilder(
                     stream: eventStream,
-                    builder:
-                        (_, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    builder: (_, AsyncSnapshot<QuerySnapshot> snapshot) {
                       if (snapshot.hasData) {
-                        final List<EventCardViewModel> events =
-                        snapshot.data.documents.map(
-                                (event)=>EventCardViewModel.fromSnapShot(event)
-                        ).toList();
+                        final List<EventCardViewModel> events = snapshot
+                            .data.documents
+                            .map((event) =>
+                                EventCardViewModel.fromSnapShot(event))
+                            .toList();
                         return Expanded(
                           child: EventsList(
                             sdk: sdk,
@@ -142,7 +123,11 @@ class _HomeState extends State<Home> {
                           ),
                         );
                       } else {
-                        return Center(child: CircularProgressIndicator());
+                        return Expanded(
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
                       }
                     }),
               ],
@@ -176,7 +161,9 @@ class _HomeState extends State<Home> {
         IconButton(
           icon: Icon(Icons.search),
           color: Colors.black,
-          onPressed: () {},
+          onPressed: () {
+            showSearch(context: context, delegate: EventSearch(sdk));
+          },
         ),
       ],
     );
@@ -212,12 +199,44 @@ class _HomeState extends State<Home> {
   }
 }
 
+class EventSearch extends SearchDelegate<EventCardViewModel> {
+  final int sdk;
 
+  EventSearch(this.sdk);
 
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    // TODO: implement buildActions
+    return null;
+  }
 
+  @override
+  Widget buildLeading(BuildContext context) {
+    // TODO: implement buildLeading
+    return null;
+  }
 
+  @override
+  Widget buildResults(BuildContext context) {
+    // TODO: implement buildResults
+    return Container();
+  }
 
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    print("sdk from search delegate is $sdk");
+    if (sdk > 21) {
+      SystemChrome.setEnabledSystemUIOverlays([]); //SystemUiOverlay.values
+//       SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+//       statusBarBrightness: Brightness.light,
+//       statusBarIconBrightness: Brightness.light,
+//         statusBarColor: Colors.transparent,
+//      ));
+    } else {
+      SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+    }
+    // TODO: implement buildSuggestions
+    return Container();
+  }
 
-
-
-
+}

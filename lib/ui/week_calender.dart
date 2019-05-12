@@ -105,14 +105,9 @@ class _WeekCalenderState extends State<WeekCalender>  with WidgetsBindingObserve
   @override
   void didUpdateWidget(WeekCalender oldWidget) {
 
-
     print("didUpdateWidget called");
     SchedulerBinding.instance.addPostFrameCallback(_calculatePositionOffset);
 
-    //positionFactor = secondDayCardOffset - firstDayCardOffset;
-
-//    print(
-//        "difference in y = ${firstDayCardOffset.dy - secondDayCardOffset.dy}");
     if (widget.dateTime != oldWidget.dateTime) {
         weekDay = widget.dateTime.weekday;
         firstDayOfTheWeek = widget.dateTime
@@ -122,8 +117,6 @@ class _WeekCalenderState extends State<WeekCalender>  with WidgetsBindingObserve
     if (widget.direction != oldWidget.direction) {
         direction = widget.direction;
     }
-
-    // print("Offset from Updated $secondDayCardOffset");
 
     super.didUpdateWidget(oldWidget);
   }
@@ -146,8 +139,6 @@ class _WeekCalenderState extends State<WeekCalender>  with WidgetsBindingObserve
 
   @override
   Widget build(BuildContext context) {
-//    print("From Build first Offset = $firstDayCardOffset");
-//    print("From Build second Offset = $secondDayCardOffset");
     return OrientationBuilder(
         builder: (BuildContext context, Orientation orientation) => Flex(
               direction: direction == null
