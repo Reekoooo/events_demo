@@ -369,9 +369,9 @@ class EventCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Positioned(
+                PositionedDirectional(
                   top: 20,
-                  right: 20,
+                  end: 20,
                   child: DayCard(
                     viewModel: viewModel.dayCardViewModel,
                   ),

@@ -199,7 +199,9 @@ class _WeekCalenderState extends State<WeekCalender>  with WidgetsBindingObserve
                                         .difference(firstDayOfTheWeek)
                                         .inDays)}");
 
-                            return AnimatedPositioned(
+                            final double dx = positionFactor.dx.abs() ;
+
+                            return AnimatedPositionedDirectional(
                               top: orientation == Orientation.landscape
                                   ? (positionFactor.dy - 60.0) +
                                       positionFactor.dy *
@@ -207,10 +209,10 @@ class _WeekCalenderState extends State<WeekCalender>  with WidgetsBindingObserve
                                               .difference(firstDayOfTheWeek)
                                               .inDays)
                                   : 0.0,
-                              left: orientation == Orientation.landscape
+                              start: orientation == Orientation.landscape
                                   ? 0.0
-                                  : (positionFactor.dx - 40.0) +
-                                      positionFactor.dx *
+                                  : (dx - 40.0) +
+                                      dx *
                                           (snapshot.data.position
                                               .difference(firstDayOfTheWeek)
                                               .inDays),
@@ -223,7 +225,7 @@ class _WeekCalenderState extends State<WeekCalender>  with WidgetsBindingObserve
                                   width: orientation == Orientation.landscape
                                       ? 40.0
                                       : 40 +
-                                          positionFactor.dx *
+                                          dx *
                                               snapshot.data.span,
                                   height: orientation == Orientation.landscape
                                       ? 60.0 +

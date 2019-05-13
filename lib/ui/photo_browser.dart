@@ -7,7 +7,6 @@ class PhotoBrowser extends StatefulWidget {
   final List<EventCardViewModel> events;
   final int activePhotoIndex;
   final ValueNotifier<int> controller;
-
   PhotoBrowser({this.events, this.activePhotoIndex, this.controller});
 
   @override
@@ -127,6 +126,9 @@ class _PhotoBrowserState extends State<PhotoBrowser>
   _onPanStart(DragStartDetails details) {
     _dragStart = details.globalPosition;
     _nextCardBackController.stop(canceled: true);
+    _nextCardForwardController.stop(canceled: true);
+    _currentCardBackController.stop(canceled: true);
+    _currentCardForwardController.stop(canceled: true);
   }
 
   _onPanUpdate(DragUpdateDetails details) {

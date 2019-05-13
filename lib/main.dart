@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
-
 import 'package:events/screens/details_screen.dart';
 import 'package:events/ui/event_card.dart';
 import 'package:events/ui/events_list.dart';
@@ -11,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:device_info/device_info.dart';
 import 'package:flutter/rendering.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'blocs/provider.dart';
 
 void main() {
@@ -25,7 +25,17 @@ class MyApp extends StatelessWidget {
     return Provider(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+                    
+        ],
+        supportedLocales: [
+          Locale('en'),
+          Locale('ar'),      
+        ],
         home: Home(),
+       // theme: Theme.of(context).copyWith(hintColor: Colors.red),
         routes: {
           'detailPage': (context) => DetailPage(),
         },
@@ -87,7 +97,8 @@ class _HomeState extends State<Home> {
     return Scaffold(
       appBar: _buildAppBar(),
       body: OrientationBuilder(
-        builder: (BuildContext context, Orientation orientation) => Flex(
+        builder: (BuildContext context, Orientation orientation) =>
+            Flex(
               direction: orientation == Orientation.portrait
                   ? Axis.horizontal
                   : Axis.vertical,
@@ -114,7 +125,7 @@ class _HomeState extends State<Home> {
                         final List<EventCardViewModel> events = snapshot
                             .data.documents
                             .map((event) =>
-                                EventCardViewModel.fromSnapShot(event))
+                            EventCardViewModel.fromSnapShot(event))
                             .toList();
                         return Expanded(
                           child: EventsList(
@@ -203,6 +214,21 @@ class EventSearch extends SearchDelegate<EventCardViewModel> {
   final int sdk;
 
   EventSearch(this.sdk);
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return theme.copyWith(
+    // primaryColor: Colors.white,
+     //primaryIconTheme: theme.primaryIconTheme.copyWith(color: Colors.grey),
+     //primaryColorBrightness: Brightness.dark,
+     //primaryTextTheme: theme.textTheme,
+     brightness: Brightness.light,
+    // appBarTheme: theme.appBarTheme.copyWith(elevation: 0.0,),
+     hintColor: Colors.red,
+    // cursorColor: Colors.red
+    );
+  }
 
   @override
   List<Widget> buildActions(BuildContext context) {
