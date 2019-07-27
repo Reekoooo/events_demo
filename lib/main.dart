@@ -52,14 +52,16 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
   int sdk = 100;
-  Stream<QuerySnapshot> eventStream;
-
+  //Stream<QuerySnapshot> eventStream;
+  StreamController<List<EventCardViewModel>> eventStream = StreamController();
   @override
   void initState() {
     super.initState();
-    eventStream =
-        Firestore.instance.collection("events").orderBy("datetime").snapshots();
-    getAndroidVersion();
+    eventStream.add(events);
+
+//    eventStream=
+//        Firestore.instance.collection("events").orderBy("datetime").snapshots();
+//    getAndroidVersion();
   }
 
   Future<void> getAndroidVersion() async {
@@ -119,14 +121,15 @@ class _HomeState extends State<Home> {
                   ),
                 ),
                 StreamBuilder(
-                    stream: eventStream,
-                    builder: (_, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    stream: eventStream.stream,
+                    builder: (_,  snapshot) {
                       if (snapshot.hasData) {
                         final List<EventCardViewModel> events = snapshot
-                            .data.documents
-                            .map((event) =>
-                            EventCardViewModel.fromSnapShot(event))
-                            .toList();
+                            .data;
+//                            .documents
+//                            .map((event) =>
+//                            EventCardViewModel.fromSnapShot(event))
+//                            .toList();
                         return Expanded(
                           child: EventsList(
                             sdk: sdk,

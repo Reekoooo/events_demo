@@ -5,118 +5,118 @@ import 'dart:math' as math;
 import 'package:events/ui/week_calender.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-//List<EventCardViewModel> events = [
-//  EventCardViewModel(
-//    assetPath: "assets/amrdiab.jpg",
-//    title1: "Alexandria",
-//    title2: "Amr Diab",
-//    title3: "Alexandria",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().subtract(Duration(days: 4)),
-//      //dayShortNotation: "Sat",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/angam.jpg",
-//    title1: "Alexandria",
-//    title2: "Angham",
-//    title3: "Alexandria",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().subtract(Duration(days: 4)),
-//      //dayShortNotation: "Sat",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/hamaki.jpg",
-//    title1: "Cairo",
-//    title2: "M.Hamaki",
-//    title3: "Cairo",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().subtract(Duration(days: 3)),
-//      //dayShortNotation: "Sun",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/asala.jpeg",
-//    title1: "Cairo",
-//    title2: "Asala",
-//    title3: "Cairo",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().subtract(Duration(days: 3)),
-//      //dayShortNotation: "Sun",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/rihanna.jpg",
-//    title1: "Luxor",
-//    title2: "Rihanna",
-//    title3: "Luxor",
-//    location: 'Hatshipsute Temple',
-//    eventType: "Music",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().subtract(Duration(days: 2)),
-//      //dayShortNotation: "Tue",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/oka.jpg",
-//    title1: "Aswan",
-//    title2: "Oka & Ortiga",
-//    title3: "Aswan",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().subtract(Duration(days: 0)),
-//      //dayShortNotation: "Thr",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/nancy.jpg",
-//    title1: "Alexandria",
-//    title2: "Nancy Ajram",
-//    title3: "Mansoura",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().add(Duration(days: 1)),
-//      //dayShortNotation: "Sat",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/tamer.jpg",
-//    title1: "Alexandria",
-//    title2: "Tamer Hosney",
-//    title3: "Giza",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().add(Duration(days: 2)),
-//      //dayShortNotation: "Sat",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//  EventCardViewModel(
-//    assetPath: "assets/sherine.jpg",
-//    title1: "Alexandria",
-//    title2: "Sherine",
-//    title3: "PortSaid",
-//    dayCardViewModel: DayCardViewModel(
-//      day: DateTime.now().add(Duration(days: 4)),
-//      //dayShortNotation: "Sat",
-//      backgound: Colors.white,
-//      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
-//    ),
-//  ),
-//];
+List<EventCardViewModel> events = [
+  EventCardViewModel(
+    assetPath: "http://english.ahram.org.eg/Media/News/2018/11/10/2018-636774537588308852-830.jpg",
+    title1: "Alexandria",
+    title2: "Amr Diab",
+    title3: "Alexandria",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().subtract(Duration(days: 4)),
+      //dayShortNotation: "Sat",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "https://www.egypttoday.com/siteimages/Larg/58070.jpg",
+    title1: "Alexandria",
+    title2: "Angham",
+    title3: "Alexandria",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().subtract(Duration(days: 4)),
+      //dayShortNotation: "Sat",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "http://en.elbalad.news/upload/photo/news/234/4/600x338o/44.jpg",
+    title1: "Cairo",
+    title2: "M.Hamaki",
+    title3: "Cairo",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().subtract(Duration(days: 3)),
+      //dayShortNotation: "Sun",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "https://www.moroccoworldnews.com/wp-content/uploads/2017/06/assala_nasri_1498423283-640x360.jpg",
+    title1: "Cairo",
+    title2: "Asala",
+    title3: "Cairo",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().subtract(Duration(days: 3)),
+      //dayShortNotation: "Sun",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "https://i0.wp.com/metro.co.uk/wp-content/uploads/2018/08/gettyimages-821622848.jpg?quality=90&strip=all&zoom=1&resize=644%2C429&ssl=1",
+    title1: "Luxor",
+    title2: "Rihanna",
+    title3: "Luxor",
+    location: 'Hatshipsute Temple',
+    eventType: "Music",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().subtract(Duration(days: 2)),
+      //dayShortNotation: "Tue",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "https://images.shazam.com/coverart/t242058447-b976773585_s400.jpg",
+    title1: "Aswan",
+    title2: "Oka & Ortiga",
+    title3: "Aswan",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().subtract(Duration(days: 0)),
+      //dayShortNotation: "Thr",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "http://desktop.beiruting.com/content/ResizedImages/344/1000/inside/url-150505115833332.jpg",
+    title1: "Alexandria",
+    title2: "Nancy Ajram",
+    title3: "Mansoura",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().add(Duration(days: 1)),
+      //dayShortNotation: "Sat",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "https://stepcdn.com/assets/legacy/564/tamer-hosny-700x.jpg",
+    title1: "Alexandria",
+    title2: "Tamer Hosney",
+    title3: "Giza",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().add(Duration(days: 2)),
+      //dayShortNotation: "Sat",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+  EventCardViewModel(
+    assetPath: "https://www.elbalad.news/upload/photo/news/375/3/600x338o/404.jpg",
+    title1: "Alexandria",
+    title2: "Sherine",
+    title3: "PortSaid",
+    dayCardViewModel: DayCardViewModel(
+      day: DateTime.now().add(Duration(days: 4)),
+      //dayShortNotation: "Sat",
+      backgound: Colors.white,
+      dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
+    ),
+  ),
+];
 
 class EventCardViewModel {
   /// hight of the EventCard.
@@ -170,6 +170,16 @@ class EventCardViewModel {
         dayShortNotationTextStyle: TextStyle(fontSize: 12.0),
       ),
     );
+  }
+
+  Map<String,dynamic> toSnapShot(){
+    return {
+      'assetPath':this.assetPath,
+      'title1':this.title1,
+      'title2':this.title2,
+      'title3':this.title3,
+      'datetime':this.dayCardViewModel.day.millisecondsSinceEpoch
+    };
   }
 }
 class QuadraticOffsetTween extends Tween<Offset> {

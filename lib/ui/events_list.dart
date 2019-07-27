@@ -59,7 +59,7 @@ class _EventsListState extends State<EventsList> {
     position = widget.events[index].dayCardViewModel.day;
     span = (widget.events[index + 1].dayCardViewModel.day
         .difference(widget.events[index].dayCardViewModel.day)
-        .inMilliseconds/Duration.millisecondsPerDay).ceil();
+        .inMilliseconds/Duration.millisecondsPerDay).floor();
     indicator = WeekCalenderIndicator(
       position: position,
       span: span,
